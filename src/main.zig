@@ -43,8 +43,7 @@ pub fn main(init: std.process.Init) !void {
                 config_file_path = args[i + 1];
                 i += 1; // Skip the next argument since it's the config file path
             } else {
-                std.log.err("Expected a file path after --config, but none was provided.", .{});
-                return error.InvalidArguments;
+                fatal("Expected a file path after --config, but none was provided.");
             }
         } else if (std.mem.eql(u8, args[i], "--dry-run")) {
             resolve_target = .Print;
@@ -62,4 +61,9 @@ pub fn main(init: std.process.Init) !void {
     const ctx = try pwContext.init(arena, io, config, resolve_target);
     defer ctx.deinit();
     try ctx.runLoop();
+}
+
+fn fatal(msg: []const u8) noreturn {
+    std.log.err("{s}", .{msg});
+    std.process.exit(1);
 }
