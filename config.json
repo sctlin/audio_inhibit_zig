@@ -1,0 +1,17 @@
+{
+	"sleep_conditions": {
+		"application_names": [
+			"Spotify",
+			"Discord"
+		],
+		"media_types": [
+			"Audio"
+		],
+		"media_categories": [
+			"Playback"
+		],
+		"media_roles": [
+			"Music"
+		]
+	}
+}
