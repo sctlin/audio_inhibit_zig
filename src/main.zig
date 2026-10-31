@@ -51,9 +51,7 @@ pub fn main(init: std.process.Init) !void {
         }
     }
     if (output_mode == .Idle and try is_running(io)) {
-        var stderr_writer = std.Io.File.stderr().writer(io, &.{});
-        stderr_writer.interface.writeAll("Another instance is already running. Exiting.\n") catch {};
-        return error.AlreadyRunning;
+        fatal("Another instance is already running. Exiting.");
     }
     const conf = try config.init(arena, io, init.environ_map, config_file_path);
 
