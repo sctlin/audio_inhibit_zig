@@ -43,7 +43,7 @@ To display what idle lock is currently active, add to any waybar config:
 ```
 
 ## Config
-Config files may be explicitly specified using `--config <path>`, otherwise it will default to `${XDG_CONFIG_HOME}/audio_inhibit_zig/coonfig.json`. Config files look something like this:
+Config files may be explicitly specified using `--config <path>`, otherwise it will default to `${XDG_CONFIG_HOME}/audio_inhibit_zig/config.json`. Config files look something like this:
 
 ```json
 {
