@@ -1,11 +1,10 @@
 const std = @import("std");
-const Io = std.Io;
-const Config = @import("config.zig");
-const res = @import("resolver.zig");
-
 const c = @import("c");
+const config = @import("config.zig");
+const action = @import("action_handler.zig");
 const audio_inhibit_zig = @import("audio_inhibit_zig");
 const pwContext = @import("pipewire.zig");
+const Io = std.Io;
 
 const lockfile = "/tmp/audio_inhibit_zig.lock";
 fn is_running(io: std.Io) !bool {
@@ -35,7 +34,7 @@ pub fn main(init: std.process.Init) !void {
 
     const args = try init.minimal.args.toSlice(arena);
     var i: usize = 0;
-    var resolve_target: res.ResolveTarget = .Idle;
+    var output_mode: action.OutputMode = .Idle;
     var config_file_path: ?[]const u8 = null;
     while (i < args.len) : (i += 1) {
         if (std.mem.eql(u8, args[i], "--config")) {
@@ -46,19 +45,19 @@ pub fn main(init: std.process.Init) !void {
                 fatal("Expected a file path after --config, but none was provided.");
             }
         } else if (std.mem.eql(u8, args[i], "--dry-run")) {
-            resolve_target = .Print;
+            output_mode = .Print;
         } else if (std.mem.eql(u8, args[i], "--waybar")) {
-            resolve_target = .Waybar;
+            output_mode = .Waybar;
         }
     }
-    if (resolve_target == .Idle and try is_running(io)) {
+    if (output_mode == .Idle and try is_running(io)) {
         var stderr_writer = std.Io.File.stderr().writer(io, &.{});
         stderr_writer.interface.writeAll("Another instance is already running. Exiting.\n") catch {};
         return error.AlreadyRunning;
     }
-    const config = try Config.init(arena, io, init.environ_map, config_file_path);
+    const conf = try config.init(arena, io, init.environ_map, config_file_path);
 
-    const ctx = try pwContext.init(arena, io, config, resolve_target);
+    const ctx = try pwContext.init(arena, io, conf, output_mode);
     defer ctx.deinit();
     try ctx.runLoop();
 }

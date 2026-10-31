@@ -2,35 +2,35 @@ const std = @import("std");
 const idle = @import("idle.zig");
 const pipewire = @import("pipewire.zig");
 
-pub const Resolver = @This();
+pub const ActionHandler = @This();
 
-pub const ResolveTarget = enum {
+pub const OutputMode = enum {
     Print,
     Waybar,
     Idle,
 };
 
 io: std.Io,
-target: ResolveTarget,
+target: OutputMode,
 idle_target: idle.IdleTarget = .None,
 idle_manager: ?idle.IdleManager = null,
 lines_printed: usize = 0,
 
-pub fn init(io: std.Io, target: ResolveTarget) !Resolver {
-    var resolver = Resolver{
+pub fn init(io: std.Io, target: OutputMode) !ActionHandler {
+    var handler = ActionHandler{
         .io = io,
         .target = target,
     };
     switch (target) {
         .Idle => {
-            resolver.idle_manager = try idle.IdleManager.init(io);
+            handler.idle_manager = try idle.IdleManager.init(io);
         },
         else => {},
     }
-    return resolver;
+    return handler;
 }
 
-pub fn deinit(self: Resolver) void {
+pub fn deinit(self: ActionHandler) void {
     switch (self.target) {
         .Print => {},
         .Waybar => {},
@@ -40,7 +40,7 @@ pub fn deinit(self: Resolver) void {
     }
 }
 
-fn clear_lines(self: *Resolver, writer: *std.Io.Writer) !void {
+fn clear_lines(self: *ActionHandler, writer: *std.Io.Writer) !void {
     if (self.lines_printed > 0) {
         for (0..self.lines_printed) |_| {
             try writer.writeAll("\x1b[1A\x1b[2K");
@@ -48,7 +48,7 @@ fn clear_lines(self: *Resolver, writer: *std.Io.Writer) !void {
         self.lines_printed = 0;
     }
 }
-fn print(self: *Resolver, io: std.Io, target: idle.IdleTarget, apps: AppActivityList) !void {
+fn print(self: *ActionHandler, io: std.Io, target: idle.IdleTarget, apps: AppActivityList) !void {
     var writer = std.Io.File.stdout().writer(io, &.{});
     try self.clear_lines(&writer.interface);
     if (target == .None) {
@@ -97,7 +97,7 @@ pub const AppActivity = struct {
 
 pub const AppActivityList = std.ArrayList(AppActivity);
 pub fn update(
-    self: *Resolver,
+    self: *ActionHandler,
     new_target: idle.IdleTarget,
     apps: AppActivityList,
 ) void {

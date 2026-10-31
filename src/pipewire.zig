@@ -3,7 +3,7 @@ const systemd_c = @import("systemd_c");
 const std = @import("std");
 const Config = @import("config.zig");
 const idle = @import("idle.zig");
-const resolv = @import("resolver.zig");
+const action = @import("action_handler.zig");
 
 const PwContext = @This();
 
@@ -11,7 +11,7 @@ io: std.Io,
 allocator: std.mem.Allocator,
 config: Config,
 
-resolver: resolv.Resolver,
+action_handler: action.ActionHandler,
 
 registry: *pipewire_c.struct_pw_registry = undefined,
 registry_listener: *pipewire_c.struct_spa_hook = undefined,
@@ -59,8 +59,8 @@ fn evaluateStreams(ctx: *PwContext) void {
     const config = ctx.config;
     var idle_target: idle.IdleTarget = .None;
     var iterator = ctx.nodes.valueIterator();
-    var apps: resolv.AppActivityList = resolv.AppActivityList.initCapacity(ctx.allocator, 5) catch blk: {
-        break :blk resolv.AppActivityList.empty;
+    var apps: action.AppActivityList = action.AppActivityList.initCapacity(ctx.allocator, 5) catch blk: {
+        break :blk action.AppActivityList.empty;
     };
     defer apps.deinit(ctx.allocator);
     while (iterator.next()) |node_ptr| {
@@ -70,7 +70,7 @@ fn evaluateStreams(ctx: *PwContext) void {
         }
         const node_idle_target = idleTargetFromNode(node, config);
         idle_target = idle_target.mostRestrictive(node_idle_target);
-        apps.append(ctx.allocator, resolv.AppActivity{
+        apps.append(ctx.allocator, action.AppActivity{
             .name = node.node_name orelse "Unknown",
             .sink = node.node_type == .OuputAudio,
             .source = node.node_type == .InputAudio,
@@ -79,7 +79,7 @@ fn evaluateStreams(ctx: *PwContext) void {
             std.log.err("Failed to append app activity: {}\n", .{err});
         };
     }
-    ctx.resolver.update(idle_target, apps);
+    ctx.action_handler.update(idle_target, apps);
 }
 
 const NodeType = enum {
@@ -130,7 +130,7 @@ const Node = struct {
     media_role: ?[]const u8,
 };
 
-pub fn init(allocator: std.mem.Allocator, io: std.Io, config: Config, resolve_target: resolv.ResolveTarget) !*PwContext {
+pub fn init(allocator: std.mem.Allocator, io: std.Io, config: Config, output_mode: action.OutputMode) !*PwContext {
     pipewire_c.pw_init(null, null);
 
     const ctx = try allocator.create(PwContext);
@@ -138,7 +138,7 @@ pub fn init(allocator: std.mem.Allocator, io: std.Io, config: Config, resolve_ta
         .io = io,
         .allocator = allocator,
         .config = config,
-        .resolver = try .init(io, resolve_target),
+        .action_handler = try .init(io, output_mode),
         .nodes = .init(allocator),
     };
 
