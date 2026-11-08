@@ -12,7 +12,7 @@ Depends on:
 
 ### Basic usage
 
-The basic usage connects the the system D-Bus and prevents idle while media is playing:
+The basic usage connects to the system D-Bus and prevents idle while media is playing:
 
 ```bash
 audio_inhibit_zig
